@@ -1,6 +1,6 @@
 # Chatbot con IA
 
-![Chatbot con IA](/media/screenshot.webp)
+![Chatbot con IA](/media/screenshot.png)
 
 Este proyecto es un chatbot impulsado por inteligencia artificial, diseñado para proporcionar respuestas rápidas y precisas a las preguntas de los usuarios. Utiliza tecnologías avanzadas como WebGPU para acelerar las operaciones de cómputo, asegurando una experiencia de usuario fluida y eficiente.
 
