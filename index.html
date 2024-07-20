@@ -190,11 +190,11 @@
             border-radius: 25px;
             background-color: var(--input-background);
             color: var(--text-color);
+            font-size: 1rem;
         }
 
         input:focus {
             outline: none;
-            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
         }
 
         button {
@@ -351,7 +351,40 @@
 <html lang="en">
 
 <script type="module">
-    import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm";
+    // ESTE CODIGO AÑADE UNA ANIMACIÓN DE ESCRITURA EN EL INPUT PLACEHOLDER
+    // Create a new thread for the placeholder animation
+    const placeholderThread = async () => {
+        while (true) {
+            await new Promise((resolve) => setTimeout(resolve, 3500));
+            typingAnimation('Escribe tu mensaje aquí...');
+            await new Promise((resolve) => setTimeout(resolve, 3500));
+            typingAnimation('¿Qué quieres saber?');
+            await new Promise((resolve) => setTimeout(resolve, 3500));;
+            typingAnimation('¿Qué es lo que necesitas?');
+            await new Promise((resolve) => setTimeout(resolve, 3500));
+            typingAnimation('¿En qué puedo ayudarte?');
+            await new Promise((resolve) => setTimeout(resolve, 3500));
+            typingAnimation('Pregúntame lo que quieras...');
+        }
+    };
+
+    // Start the placeholder animation thread
+    placeholderThread();
+
+    const typingAnimation = (message) => {
+        let i = 0;
+        const interval = setInterval(() => {
+            if (i < message.length) {
+                $input.setAttribute('placeholder', message.substring(0, i + 1) + '|');
+                i++;
+            } else {
+                clearInterval(interval);
+            }
+        }, 100);
+    }
+
+    /* ESTE ES EL CÓDIGO DE LA APLICACIÓN PARA EL CHATBOT */
+    import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm"; // Comentar esta línea si quieres desactivar el modelo
 
     const SELECTED_MODEL = 'Llama-3-8B-Instruct-q4f32_1-MLC';
 
@@ -375,7 +408,7 @@
                 if (info.progress === 1) {
                     $button.removeAttribute('disabled');
                 }
-            },
+            }
         })
     $loadingMessage.textContent = '';
 
