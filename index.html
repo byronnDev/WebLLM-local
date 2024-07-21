@@ -226,6 +226,7 @@
             text-align: center;
             padding: 5px;
             background-color: var(--background-color);
+            z-index: -1;
         }
 
         @media (min-width: 768px) {
@@ -433,7 +434,7 @@
         {
             initProgressCallback: (info) => {
                 console.log(info);
-                $loadingMessage.textContent = `${info.text}%`;
+                $loadingMessage.textContent = `Cargando modelo: ${(info.progress * 100).toFixed(2)}%`;
                 if (info.progress === 1) {
                     $button.removeAttribute('disabled');
                 }
