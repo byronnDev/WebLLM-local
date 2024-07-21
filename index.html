@@ -434,7 +434,7 @@
         {
             initProgressCallback: (info) => {
                 console.log(info);
-                $loadingMessage.textContent = `Cargando modelo: ${(info.progress * 100).toFixed(2)}%`;
+                $loadingMessage.textContent = `Cargando modelo: ${(info.progress * 100).toFixed(0)}%`;
                 if (info.progress === 1) {
                     $button.removeAttribute('disabled');
                 }
