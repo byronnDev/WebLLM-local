@@ -315,6 +315,12 @@
             height: auto;
         }
 
+        .back-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+        }
+
         .back-button__link {
             color: #9c9c9c;
             text-decoration: none;
@@ -328,10 +334,43 @@
             transition: all 0.3s ease-in-out;
         }
 
+        .model-select-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .model-select {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            border: none;
+            border-radius: 15px;
+            background-color: var(--input-background);
+            color: var(--text-color);
+            font-size: 1rem;
+            z-index: 1;
+        }
+
+        .model-select:focus {
+            outline: none;
+        }
+
+        .model-select option {
+            background-color: var(--input-background);
+            color: var(--text-color);
+        }
+
         @media (max-width: 768px) {
             .back-button {
-                bottom: 10px;
-                left: 10px;
+                display: none;
+            }
+
+            .model-select {
+                position: static;
+                margin: 0 auto;
             }
         }
     </style>
@@ -341,6 +380,11 @@
     <h1>ChatGPT 100% local con WebGPU</h1>
     <div class="creditos">
         Por <a href="https://mikeldev.com" target="_blank" rel="noopener noreferrer">Mikel Echeverria</a>
+    </div>
+    <div class="model-select-container">
+        <select id="model-select" class="model-select">
+            <option selected disabled value="unselected">Seleccionar modelo</option>
+        </select>
     </div>
     <main>
         <ul id="chat-messages">
