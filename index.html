@@ -315,6 +315,12 @@
             height: auto;
         }
 
+        .back-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+        }
+
         .back-button__link {
             color: #9c9c9c;
             text-decoration: none;
@@ -328,10 +334,43 @@
             transition: all 0.3s ease-in-out;
         }
 
+        .model-select-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .model-select {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            border: none;
+            border-radius: 15px;
+            background-color: var(--input-background);
+            color: var(--text-color);
+            font-size: 1rem;
+            z-index: 1;
+        }
+
+        .model-select:focus {
+            outline: none;
+        }
+
+        .model-select option {
+            background-color: var(--input-background);
+            color: var(--text-color);
+        }
+
         @media (max-width: 768px) {
             .back-button {
-                bottom: 10px;
-                left: 10px;
+                display: none;
+            }
+
+            .model-select {
+                position: static;
+                margin: 0 auto;
             }
         }
     </style>
@@ -341,6 +380,11 @@
     <h1>ChatGPT 100% local con WebGPU</h1>
     <div class="creditos">
         Por <a href="https://mikeldev.com" target="_blank" rel="noopener noreferrer">Mikel Echeverria</a>
+    </div>
+    <div class="model-select-container">
+        <select id="model-select" class="model-select">
+            <option selected disabled value="unselected">Seleccionar modelo</option>
+        </select>
     </div>
     <main>
         <ul id="chat-messages">
@@ -413,10 +457,11 @@
         alert('Tu navegador no soporta WebGPU. Por favor, utiliza un navegador compatible como Chrome o Firefox. O tu dispositivo no soporta WebGPU.');
     }
 
-    import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm"; // Comentar esta línea si quieres desactivar el modelo
-
     // https://github.com/mlc-ai/web-llm/blob/main/src/config.ts#L293 para ver los modelos disponibles
-    const SELECTED_MODEL = 'Phi-3.5-mini-instruct-q4f16_1-MLC'; // Cambiar por el modelo que quieras usar usando el model_id
+    const MODELS = {
+        'Phi3.5 mini - Rápido': 'Phi-3.5-mini-instruct-q4f16_1-MLC',
+        'LLama3.1 - Inteligente': 'Llama-3.1-8B-Instruct-q4f32_1-MLC-1k',
+    };
 
     const $ = el => document.querySelector(el);
 
@@ -427,6 +472,23 @@
     const $container = $('main');
     const $button = $('button');
     const $loadingMessage = $('small');
+    const $modelSelect = document.getElementById('model-select');
+
+    // Llenar el select con los modelos disponibles
+    for (const [key, value] of Object.entries(MODELS)) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = key;
+        $modelSelect.appendChild(option);
+    }
+
+    let SELECTED_MODEL = await new Promise((resolve) => {
+        $modelSelect.addEventListener('change', () => {
+            resolve($modelSelect.value);
+        });
+    });
+
+    import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm"; // Comentar esta línea si quieres desactivar el modelo
 
     // Cargar el modelo
     const engine = await CreateMLCEngine(
@@ -434,7 +496,7 @@
         {
             initProgressCallback: (info) => {
                 console.log(info);
-                $loadingMessage.textContent = `Cargando modelo: ${(info.progress * 100).toFixed(0)}%`;
+                $button.textContent = `Cargando modelo: ${(info.progress * 100).toFixed(0)}%`;
                 if (info.progress === 1) {
                     $button.removeAttribute('disabled');
                 }
