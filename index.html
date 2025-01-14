@@ -309,18 +309,18 @@
             margin: 0.5em 0;
             padding-left: 1.5em;
         }
-
+        
         .message .content img {
             max-width: 100%;
             height: auto;
         }
-
+        
         .back-button {
             position: fixed;
             bottom: 20px;
             left: 20px;
         }
-
+        
         .back-button__link {
             color: #9c9c9c;
             text-decoration: none;
@@ -328,19 +328,19 @@
             background-color: var(--background-color);
             padding: 5px 10px;
         }
-
+        
         .back-button__link:hover {
             color: white;
             transition: all 0.3s ease-in-out;
         }
-
+        
         .model-select-container {
             display: flex;
             justify-content: flex-end;
             align-items: center;
             margin-bottom: 20px;
         }
-
+        
         .model-select {
             position: fixed;
             top: 20px;
@@ -353,7 +353,7 @@
             font-size: 1rem;
             z-index: 1;
         }
-
+        
         .model-select:focus {
             outline: none;
         }
@@ -361,6 +361,38 @@
         .model-select option {
             background-color: var(--input-background);
             color: var(--text-color);
+        }
+        
+        #error-notification {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ff4444;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.3s ease-in-out;
+            max-width: 90%;
+            width: auto;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -20px);
+                scale: 0.95;
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+                scale: 1;
+            }
         }
 
         @media (max-width: 768px) {
@@ -371,6 +403,15 @@
             .model-select {
                 position: static;
                 margin: 0 auto;
+                width: 100%;
+                max-width: 300px;
+            }
+
+            #error-notification {
+                top: 10px;
+                padding: 10px 16px;
+                font-size: 0.8rem;
+                width: 85%;
             }
         }
     </style>
@@ -409,6 +450,7 @@
         <div class="content"></div>
     </li>
 </template>
+<div id="error-notification">Error</div>
 
 <!-- Go back button -->
 <div class="back-button">
@@ -418,37 +460,73 @@
 </html>
 
 <script type="module">
+    // Función centralizada para manejo de errores
+    const handleError = (error, context) => {
+        console.error(`Error en ${context}:`, error);
+        showError(`Error: ${error.message || 'Ha ocurrido un error inesperado'}`);
+    };
+
+    // Validar soporte de WebGPU
+    try {
+        if (!navigator.gpu) {
+            throw new Error('Tu navegador no soporta WebGPU. Por favor, utiliza un navegador compatible como Chrome o Firefox.');
+        }
+    } catch (error) {
+        handleError(error, 'Validación WebGPU');
+    }
+
+    // Optimizar la selección del DOM
+    const $ = el => document.querySelector(el);
+    const $$ = el => document.querySelectorAll(el);
+
+    const $form = $('form');
+    const $input = $('input');
+    const $template = $('#message-template');
+    const $messages = $('ul');
+    const $container = $('main');
+    const $button = $('button');
+    const $loadingMessage = $('small');
+    const $modelSelect = $('#model-select');
+
     // ESTE CODIGO AÑADE UNA ANIMACIÓN DE ESCRITURA EN EL INPUT PLACEHOLDER
-    // Create a new thread for the placeholder animation
+    // Optimizar la animación del placeholder utilizando requestAnimationFrame
+    const typingAnimation = async (message, prevMessage = '') => {
+        const writeDelay = 100;
+        const eraseDelay = 50;
+
+        // First erase the previous message
+        for (let i = prevMessage.length; i >= 0; i--) {
+            $input.setAttribute('placeholder', prevMessage.substring(0, i) + '|');
+            await new Promise(resolve => setTimeout(resolve, eraseDelay));
+        }
+
+        // Then write the new message
+        for (let i = 0; i <= message.length; i++) {
+            $input.setAttribute('placeholder', message.substring(0, i) + '|');
+            await new Promise(resolve => setTimeout(resolve, writeDelay));
+        }
+    };
+
     const placeholderThread = async () => {
+        const messages = [
+            'Escribe tu mensaje aquí...',
+            '¿Qué te gustaría saber?',
+            '¿En qué puedo ayudarte?',
+            'Pregúntame lo que quieras...',
+            'Escribe tu pregunta aquí...'
+        ];
+        let index = 0;
+        let prevMessage = '';
         while (true) {
-            await new Promise((resolve) => setTimeout(resolve, 3500));
-            typingAnimation('Escribe tu mensaje aquí...');
-            await new Promise((resolve) => setTimeout(resolve, 3500));
-            typingAnimation('¿Qué quieres saber?');
-            await new Promise((resolve) => setTimeout(resolve, 3500));;
-            typingAnimation('¿Qué es lo que necesitas?');
-            await new Promise((resolve) => setTimeout(resolve, 3500));
-            typingAnimation('¿En qué puedo ayudarte?');
-            await new Promise((resolve) => setTimeout(resolve, 3500));
-            typingAnimation('Pregúntame lo que quieras...');
+            await typingAnimation(messages[index], prevMessage);
+            prevMessage = messages[index];
+            index = (index + 1) % messages.length;
+            await new Promise(resolve => setTimeout(resolve, 2000));
         }
     };
 
     // Start the placeholder animation thread
     placeholderThread();
-
-    const typingAnimation = (message) => {
-        let i = 0;
-        const interval = setInterval(() => {
-            if (i < message.length) {
-                $input.setAttribute('placeholder', message.substring(0, i + 1) + '|');
-                i++;
-            } else {
-                clearInterval(interval);
-            }
-        }, 100);
-    }
 
     /* ESTE ES EL CÓDIGO DE LA APLICACIÓN PARA EL CHATBOT */
 
@@ -464,17 +542,6 @@
         'LLama3.1 - Inteligente': 'Llama-3.1-8B-Instruct-q4f32_1-MLC-1k',
     };
 
-    const $ = el => document.querySelector(el);
-
-    const $form = $('form');
-    const $input = $('input');
-    const $template = $('#message-template');
-    const $messages = $('ul');
-    const $container = $('main');
-    const $button = $('button');
-    const $loadingMessage = $('small');
-    const $modelSelect = document.getElementById('model-select');
-
     // Llenar el select con los modelos disponibles
     for (const [key, value] of Object.entries(MODELS)) {
         const option = document.createElement('option');
@@ -483,71 +550,123 @@
         $modelSelect.appendChild(option);
     }
 
-    let SELECTED_MODEL = await new Promise((resolve) => {
-        $modelSelect.addEventListener('change', () => {
-            resolve($modelSelect.value);
-        });
-    });
-
     import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm"; // Comentar esta línea si quieres desactivar el modelo
 
-    // Cargar el modelo
-    const engine = await CreateMLCEngine(
-        SELECTED_MODEL,
-        {
-            initProgressCallback: (info) => {
-                console.log(info);
-                $button.textContent = `Cargando modelo: ${(info.progress * 100).toFixed(0)}%`;
-                if (info.progress === 1) {
-                    $button.removeAttribute('disabled');
-                    $button.textContent = 'Enviar';
-                }
+    // Inicialización del modelo
+    let engine = null;
+    
+    async function initializeModel(modelName) {
+        try {
+            if (!modelName) {
+                throw new Error('Por favor, selecciona un modelo para comenzar.');
             }
-        })
-    $loadingMessage.textContent = '';
 
-    // Declare the messages array
+            $button.setAttribute('disabled', true);
+            $button.textContent = 'Cargando modelo...';
+
+            engine = await CreateMLCEngine(
+                modelName,
+                {
+                    initProgressCallback: (info) => {
+                        try {
+                            console.log(info);
+                            $button.textContent = `Cargando modelo: ${(info.progress * 100).toFixed(0)}%`;
+                            if (info.progress === 1) {
+                                $button.removeAttribute('disabled');
+                                $button.textContent = 'Enviar';
+                            }
+                        } catch (error) {
+                            handleError(error, 'Progreso de carga');
+                        }
+                    }
+                }
+            );
+
+            // Configurar manejador de errores de GPU
+            if (engine.device) {
+                engine.device.addEventListener("uncapturederror", (event) => {
+                    handleError(event.error, 'GPU no capturado');
+                    $button.setAttribute('disabled', true);
+                });
+            }
+
+            $loadingMessage.textContent = '';
+            showError('Modelo cargado correctamente', 2000);
+        } catch (error) {
+            handleError(error, 'Inicialización del modelo');
+            $button.textContent = 'Error al cargar';
+            throw error;
+        }
+    }
+
+    // Modificar el manejo de la selección del modelo
+    $modelSelect.addEventListener('change', async () => {
+        const selectedModel = $modelSelect.value;
+        if (selectedModel && selectedModel !== 'unselected') {
+            try {
+                await initializeModel(selectedModel);
+            } catch (error) {
+                $modelSelect.value = 'unselected';
+            }
+        }
+    });
+
+    // Declarar el array de mensajes
     const messages = [];
 
-    // Evento de envío de formulario
+    // Modificar el evento de envío del formulario
     $form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const messageText = $input.value.trim();
 
-        if (messageText !== '') $input.value = '';
-
-        addMessage(messageText, 'user');
-        $button.setAttribute('disabled', true);
-
-        const userMessage = {
-            role: 'user',
-            content: messageText,
-        };
-        messages.push(userMessage);
-
-        const chunks = await engine.chat.completions.create({
-            messages,
-            stream: true
-        });
-
-        let replay = "";
-
-        const $botMessage = addMessage("", 'bot');
-
-        for await (const chunk of chunks) {
-            const choice = chunk.choices[0];
-            const content = choice.delta.content ?? "";
-            replay += content;
-            $botMessage.innerHTML = marked.parse(replay);
-            console.log(chunk.choices);
+        if (!engine) {
+            showError('Por favor, selecciona un modelo primero');
+            return;
         }
 
-        $button.removeAttribute('disabled');
+        const messageText = $input.value.trim();
+        if (!messageText) return;
 
-        messages.push({
-            role: 'assistant',
-            content: replay,
-        });
+        try {
+            $input.value = '';
+            addMessage(messageText, 'user');
+            $button.setAttribute('disabled', true);
+
+            const userMessage = {
+                role: 'user',
+                content: messageText,
+            };
+            messages.push(userMessage);
+
+            const chunks = await engine.chat.completions.create({
+                messages,
+                stream: true
+            });
+
+            let replay = "";
+            const $botMessage = addMessage("", 'bot');
+
+            for await (const chunk of chunks) {
+                try {
+                    const choice = chunk.choices[0];
+                    const content = choice.delta.content ?? "";
+                    replay += content;
+                    $botMessage.innerHTML = marked.parse(replay);
+                } catch (error) {
+                    handleError(error, 'Procesamiento de chunk');
+                    break;
+                }
+            }
+
+            messages.push({
+                role: 'assistant',
+                content: replay,
+            });
+        } catch (error) {
+            handleError(error, 'Procesamiento de mensaje');
+            addMessage('Lo siento, ha ocurrido un error al procesar tu solicitud.', 'bot');
+        } finally {
+            $button.removeAttribute('disabled');
+        }
     });
 
     function addMessage(message, sender) {
@@ -561,11 +680,35 @@
         $who.textContent = sender === 'user' ? 'Tú' : 'GPT';
         $newMessage.classList.add(sender);
 
-        // Actualizar scroll
-        $container.scrollTop = $container.scrollHeight;
+        // Actualizar scroll de manera optimizada
+        $container.scrollTo({
+            top: $container.scrollHeight,
+            behavior: 'smooth'
+        });
 
         $messages.appendChild($newMessage);
 
         return $content;
     }
+
+    // Función mejorada para mostrar errores
+    function showError(message, duration = 5000) {
+        const notification = $('#error-notification');
+        if (!notification) return;
+        
+        notification.textContent = message;
+        notification.style.display = 'block';
+        
+        // Limpiar timeout anterior si existe
+        if (notification.timeoutId) {
+            clearTimeout(notification.timeoutId);
+        }
+        
+        notification.timeoutId = setTimeout(() => {
+            notification.style.display = 'none';
+        }, duration);
+    }
+
+    // Iniciar la animación del placeholder
+    placeholderThread();
 </script>
